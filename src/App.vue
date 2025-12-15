@@ -1,186 +1,187 @@
-<template>
-  <div class="app">
-    <aside class="sidebar">
-      <h2>Latent Space</h2>
-      <p>Click or drag to explore the latent space.</p>
-      <div class="coords">
-        x: {{ latentX.toFixed(2) }}, y: {{ latentY.toFixed(2) }}
-      </div>
-    </aside>
+<script setup>
+import { ref, computed } from 'vue';
 
-    <main class="main">
-      <canvas
-        ref="latentCanvas"
-        width="400"
-        height="400"
-        @mousedown="startDrag"
+// --- IMPORTS ---
+import PhraseSelector from './components/PhraseSelector.vue';
+import ScoreComparison from './components/ScoreComparison.vue';
+import LatentNavigator from './components/LatentNavigator.vue';
+import StrategyControls from './components/StrategyControls.vue';
+
+import { substitutePhrase, setChordDict, getChordById } from './logic/latentStrategies.js'; 
+import { playPhrase, stopPlayback, startAudioContext } from './logic/audioPlayback.js';
+
+// --- DATA & DICTIONARY SETUP ---
+// NOTE: Ensure your 45MB JSON file is in this path and structured correctly.
+import latentJson from './data/chords_bach_short.json'; 
+const chordDict = latentJson.chords; 
+setChordDict(chordDict); 
+
+// Example phrases to populate the PhraseSelector (using chord IDs from the data)
+const demoPhrases = [
+  // These sequences mimic the three-chord sequences used in the paper's figures
+  { id: 'bwv184-1', name: 'BWV 184.5 Cadence (vi-V-I)', chordIds: ["5838", "4524", "3823", "5833", "1787"] }, // Example V-vi-V (index 1 to 3) or vi-V-I (index 0 to 2)
+  { id: 'bwv311-1', name: 'BWV 311 Half Cadence (i-V)', chordIds: ["1592", "1798", "5652", "1794", "1645"] },
+  { id: 'short-test', name: 'A-B-C Test (3-Chord)', chordIds: ["5838", "4524", "1787"] },
+];
+
+// --- STATE MANAGEMENT ---
+const currentPhrase = ref(demoPhrases[2]); 
+const originalPhrase = ref(currentPhrase.value.chordIds); 
+// Default selection is the middle chord B (index 2 in a 5-chord array, index 1 in a 3-chord array)
+const selectedChordIndices = ref([2]); 
+
+// Strategy controls state
+const strategy = ref('knn');
+const k = ref(5); 
+
+// Ref to hold the visualization and original chord details
+const currentSubstitutionDetails = ref({
+    strategy: strategy.value,
+    originalA: null, 
+    originalB: null, 
+    originalC: null,
+    substitutedChordId: null,
+    substitutedChord: null,
+    geometricPoints: [], 
+    kNeighbors: [] 
+});
+
+
+// --- CORE COMPUTED LOGIC ---
+
+// Computes the generated phrase and updates visualization details
+const generatedPhrase = computed(() => {
+  const { generatedPhraseIds, substitutionDetails } = substitutePhrase(
+    originalPhrase.value,
+    selectedChordIndices.value,
+    strategy.value,
+    { k: k.value }
+  );
+
+  // Update the visualization details ref with the new results
+  currentSubstitutionDetails.value = {
+    ...substitutionDetails,
+    // Look up the full chord object for the visualization
+    substitutedChord: chordDict.find(c => c.id === substitutionDetails.substitutedChordId)
+  };
+
+  return generatedPhraseIds;
+});
+
+
+// Prepare coordinates (A, B, C objects) for LatentNavigator prop
+const originalPhraseCoords = computed(() => {
+    // Only return the three chords A, B, C involved in the substitution
+    return [
+        currentSubstitutionDetails.value.originalA,
+        currentSubstitutionDetails.value.originalB,
+        currentSubstitutionDetails.value.originalC,
+    ].filter(coord => coord); 
+});
+
+
+// --- EVENT HANDLERS ---
+
+function handlePhraseUpdate(newPhraseIds) {
+  originalPhrase.value = newPhraseIds;
+  // Reset selection to the middle chord
+  selectedChordIndices.value = [Math.floor(newPhraseIds.length / 2)]; 
+}
+
+function toggleChordSelection(index) {
+  // Enforce selecting only one chord (the target B) for the A-B-C experiment
+  if (selectedChordIndices.value[0] === index) {
+    selectedChordIndices.value = [];
+  } else {
+    selectedChordIndices.value = [index];
+  }
+}
+
+function handlePlay(type) {
+  // Call startAudioContext() on user interaction
+  startAudioContext(); 
+  
+  // Determine which phrase to play
+  const phraseToPlay = type === 'original' ? originalPhrase.value : generatedPhrase.value;
+  
+  // Pass the phrase IDs and the lookup function to the playback module
+  playPhrase(phraseToPlay, getChordById);
+}
+
+function handleStop() {
+  stopPlayback();
+}
+</script>
+
+<template>
+  <div id="app" class="app-container">
+    <h1>🎶 Bach Chorale Latent Space Navigator</h1>
+    
+    <div class="control-row">
+      <PhraseSelector 
+        :phrases="demoPhrases"
+        @update:phrase="handlePhraseUpdate"
       />
-      <div ref="scoreEl" class="score"></div>
-    </main>
+      <StrategyControls 
+        v-model:strategy="strategy"
+        v-model:k="k"
+      />
+      
+      <div class="audio-controls">
+          <button @click="handlePlay('original')" class="btn-play-original">
+              ▶️ Play Original
+          </button>
+          <button @click="handlePlay('generated')" class="btn-play-generated">
+              ▶️ Play Generated
+          </button>
+          <button @click="handleStop" class="btn-stop">
+              ⏹ Stop
+          </button>
+      </div>
+    </div>
+
+    <ScoreComparison
+      :original="originalPhrase"
+      :generated="generatedPhrase"
+      :selected-indices="selectedChordIndices"
+      @select-chord="toggleChordSelection"
+    />
+
+    <LatentNavigator
+      :all-latents="chordDict"
+      :original-phrase-coords="originalPhraseCoords"
+      :substitution-details="currentSubstitutionDetails"
+    />
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue';
-import Vex from 'vexflow';
-
-/* Example latent data schema
-   Replace this with your own JSON or import */
-const latentData = {
-  points: [
-    { x: 0, y: 0, notes: ['c/4', 'e/4', 'g/4'] },
-    { x: 1, y: 0, notes: ['d/4', 'f/4', 'a/4'] },
-    { x: 0, y: 1, notes: ['e/4', 'g/4', 'b/4'] },
-    { x: 1, y: 1, notes: ['f/4', 'a/4', 'c/5'] }
-  ]
+<style>
+/* Basic styles */
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: sans-serif;
 }
-
-const latentX = ref(0.5)
-const latentY = ref(0.5)
-const latentCanvas = ref(null)
-const scoreEl = ref(null)
-
-let ctx = null
-let dragging = false
-
-function drawLatentSpace() {
-  ctx.clearRect(0, 0, 400, 400)
-
-  ctx.fillStyle = '#f5f5f5'
-  ctx.fillRect(0, 0, 400, 400)
-
-  // latent points
-  ctx.fillStyle = '#333'
-  latentData.points.forEach(p => {
-    ctx.beginPath()
-    ctx.arc(p.x * 400, 400 - p.y * 400, 5, 0, Math.PI * 2)
-    ctx.fill()
-  })
-
-  // current position
-  ctx.fillStyle = 'red'
-  ctx.beginPath()
-  ctx.arc(latentX.value * 400, 400 - latentY.value * 400, 6, 0, Math.PI * 2)
-  ctx.fill()
+.control-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
-
-function nearestPoint(x, y) {
-  let best = latentData.points[0]
-  let bestDist = Infinity
-
-  latentData.points.forEach(p => {
-    const d = (p.x - x) ** 2 + (p.y - y) ** 2
-    if (d < bestDist) {
-      bestDist = d
-      best = p
-    }
-  })
-
-  return best
+.audio-controls button {
+    padding: 8px 12px;
+    margin-left: 10px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    transition: background-color 0.2s;
 }
-
-function drawScore(notes) {
-  const VF = Vex.Flow
-  scoreEl.value.innerHTML = ''
-
-  const renderer = new VF.Renderer(
-    scoreEl.value,
-    VF.Renderer.Backends.SVG
-  )
-
-  renderer.resize(500, 160)
-  const context = renderer.getContext()
-
-  const stave = new VF.Stave(10, 40, 480)
-  stave.addClef('treble').addTimeSignature('4/4')
-  stave.setContext(context).draw()
-
-  const vexNotes = notes.map(n =>
-    new VF.StaveNote({
-      clef: 'treble',
-      keys: [n],
-      duration: 'q'
-    })
-  )
-
-  const voice = new VF.Voice({
-    num_beats: vexNotes.length,
-    beat_value: 4
-  })
-
-  voice.addTickables(vexNotes)
-  new VF.Formatter().joinVoices([voice]).format([voice], 400)
-  voice.draw(context, stave)
-}
-
-function updateFromEvent(e) {
-  const rect = latentCanvas.value.getBoundingClientRect()
-
-  latentX.value = Math.min(
-    1,
-    Math.max(0, (e.clientX - rect.left) / 400)
-  )
-
-  latentY.value = Math.min(
-    1,
-    Math.max(0, 1 - (e.clientY - rect.top) / 400)
-  )
-
-  drawLatentSpace()
-  drawScore(nearestPoint(latentX.value, latentY.value).notes)
-}
-
-function startDrag(e) {
-  dragging = true
-  updateFromEvent(e)
-}
-
-function onMove(e) {
-  if (dragging) updateFromEvent(e)
-}
-
-function stopDrag() {
-  dragging = false
-}
-
-onMounted(() => {
-  ctx = latentCanvas.value.getContext('2d')
-  drawLatentSpace()
-  drawScore(latentData.points[0].notes)
-
-  window.addEventListener('mousemove', onMove)
-  window.addEventListener('mouseup', stopDrag)
-})
-</script>
-
-<style scoped>
-.app {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  height: 100vh;
-  font-family: system-ui, sans-serif;
-}
-
-.sidebar {
-  padding: 16px;
-  border-right: 1px solid #ddd;
-}
-
-.main {
-  padding: 16px;
-}
-
-canvas {
-  border: 1px solid #ccc;
-  cursor: crosshair;
-}
-
-.coords {
-  margin-top: 8px;
-  font-size: 14px;
-}
-
-.score {
-  margin-top: 16px;
+.audio-controls button:hover {
+    background-color: #eee;
 }
 </style>

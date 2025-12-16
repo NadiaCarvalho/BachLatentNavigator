@@ -27,11 +27,34 @@ let renderer = null;
    Utilities
 ========================= */
 
+const PITCH_CLASSES = [
+    'c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b'
+];
+
 function toVexFlowKeys(pitchClass) {
     if (!pitchClass || pitchClass.length === 0) return ['c/4'];
 
-    return pitchClass.map(note => {
-        return note.toLowerCase().replace('b', 'b');
+    return pitchClass.split('-').map(midiNoteStr => {
+        const midiNote = parseInt(midiNoteStr, 10);
+
+        if (isNaN(midiNote)) {
+            // Handle cases where the string isn't a valid number
+            return 'c/4';
+        }
+
+        // Calculate the pitch class index (0-11)
+        const pitchClassIndex = midiNote % 12;
+
+        // Calculate the octave (MIDI note 60 is C4, octave 4)
+        // Standard MIDI octave: floor(N/12) - 1.
+        // For VexFlow, C4 is the reference (MIDI 60 -> octave 4)
+        const octave = Math.floor(midiNote / 12) - 1;
+
+        // Get the note name (e.g., 'd', 'f#')
+        const noteName = PITCH_CLASSES[pitchClassIndex];
+
+        // Combine to VexFlow format: 'note/octave'
+        return `${noteName}/${octave}`;
     });
 }
 
@@ -87,15 +110,6 @@ function renderPhrase() {
             duration: 'q'
         });
 
-        // Add accidentals
-        chordData.pitchclass.forEach((originalNote, noteIndex) => {
-            if (originalNote.includes('#')) {
-                note.addModifier(new VF.Accidental('#'), noteIndex); // Use VF.Accidental
-            } else if (originalNote.includes('b')) {
-                note.addModifier(new VF.Accidental('b'), noteIndex); // Use VF.Accidental
-            }
-        });
-
         // --- Highlighting Logic ---
         let fillColor = '#000';
         let stemColor = '#000';
@@ -128,8 +142,7 @@ function renderPhrase() {
         beat_value: 4 // The value of a beat is a quarter note
     });
 
-    console.log(notes.length);
-
+    voice.setStrict(false);
     voice.addTickables(notes);
 
     // 4.5. Validation and Formatting

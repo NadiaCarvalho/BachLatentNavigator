@@ -11,8 +11,7 @@ import { substitutePhrase, setChordDict, getChordById } from './logic/latentStra
 import { playPhrase, stopPlayback, startAudioContext } from './logic/audioPlayback.js';
 
 // --- DATA & DICTIONARY SETUP ---
-// NOTE: Ensure your 45MB JSON file is in this path and structured correctly.
-import latentJson from './data/chords_bach_short.json'; 
+import latentJson from './data/chords_bach_all.json'; 
 const chordDict = latentJson.chords; 
 setChordDict(chordDict); 
 
@@ -25,7 +24,7 @@ const demoPhrases = [
 ];
 
 // --- STATE MANAGEMENT ---
-const currentPhrase = ref(demoPhrases[2]); 
+const currentPhrase = ref(demoPhrases[0]); 
 const originalPhrase = ref(currentPhrase.value.chordIds); 
 // Default selection is the middle chord B (index 2 in a 5-chord array, index 1 in a 3-chord array)
 const selectedChordIndices = ref([2]); 

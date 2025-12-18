@@ -27,12 +27,12 @@ An interactive web application based on research into **Explainable AI (XAI)** f
    ```bash
    git clone [https://github.com/yourusername/bach-latent-navigator.git](https://github.com/yourusername/bach-latent-navigator.git)
    cd bach-latent-navigator
-   ´´´
+   
 
 2. **Install dependencies:**
     ```bash
    npm install vexflow tone vue
-   ´´´
+   
 
 3. **Prepare the Data:**
     Ensure your chords_bach_short.json (containing the latent vectors and pitch classes) is located in src/data/.
@@ -40,7 +40,7 @@ An interactive web application based on research into **Explainable AI (XAI)** f
 4. **Run the Development Server:**
     ```bash
    npm run dev
-   ´´´
+   
 
 ---
 

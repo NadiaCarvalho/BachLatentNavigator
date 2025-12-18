@@ -91,23 +91,17 @@ This project is a functional implementation of the methodologies described in th
 
 If using this tool, please cite:
 
-
         @inproceedings{carvalho_2024_14336029,
-        author       = {Carvalho, Nádia and
-                        Bernardes de Almeida, Gilberto},
-        title        = {Exploring Sampling Strategies in Latent Spaces for
-                        Music Generation
-                        },
-        booktitle    = {Proceedings of the 21st Sound and Music Computing
-                        Conference
-                        },
-        year         = 2024,
-        pages        = {74-81},
-        publisher    = {Zenodo},
-        month        = jul,
-        venue        = {ESMAE, Porto, Portugal},
-        doi          = {10.5281/zenodo.14336029},
-        url          = {https://doi.org/10.5281/zenodo.14336029},
+            author       = {Carvalho, Nádia and Bernardes de Almeida, Gilberto},
+            title        = {Exploring Sampling Strategies in Latent Spaces for Music Generation},
+            booktitle    = {Proceedings of the 21st Sound and Music Computing Conference},
+            year         = 2024,
+            pages        = {74-81},
+            publisher    = {Zenodo},
+            month        = jul,
+            venue        = {ESMAE, Porto, Portugal},
+            doi          = {10.5281/zenodo.14336029},
+            url          = {https://doi.org/10.5281/zenodo.14336029},
         }
 
 

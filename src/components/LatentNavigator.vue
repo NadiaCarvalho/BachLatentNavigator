@@ -208,10 +208,6 @@ onMounted(draw);
 
 <template>
   <div class="latent-navigator">
-    <pre style="font-size: 10px; color: red;">
-      Coords Received: {{ originalPhraseCoords ? 'YES' : 'UNDEFINED' }}
-      Length: {{ originalPhraseCoords?.length }}
-    </pre>
     <div class="canvas-header">
       <h3>Latent Space Visualization (PCA Projection)</h3>
       <div class="legend">

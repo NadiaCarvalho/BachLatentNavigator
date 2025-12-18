@@ -165,18 +165,30 @@ function renderPhrase() {
             const noteGroups = svg.querySelectorAll('.vf-stavenote');
 
             noteGroups.forEach((element, index) => {
-                // Since the DOM order matches your phrase array order:
-                element.style.cursor = 'pointer';
-                element.style.pointerEvents = 'auto';
+                // Determine if this is the first or last chord
+                const isFirst = index === 0;
+                const isLast = index === noteGroups.length - 1;
+                const isForbidden = isFirst || isLast;
 
-                element.onclick = () => {
-                    const selectedChordId = props.phrase[index];
+                if (isForbidden) {
+                    // Style it to show it's not interactive
+                    element.style.cursor = 'not-allowed';
+                    element.style.opacity = '0.5'; // Optional: visual hint
+                    element.onclick = null; // Ensure no click action
+                } else {
+                    // Normal interactive chords
+                    element.style.cursor = 'pointer';
+                    element.style.pointerEvents = 'auto';
 
-                    emit('select-chord', {
-                        index: index,
-                        chordId: selectedChordId
-                    });
-                };
+                    element.onclick = () => {
+                        const selectedChordId = props.phrase[index];
+
+                        emit('select-chord', {
+                            index: index,
+                            chordId: selectedChordId
+                        });
+                    };
+                }
             });
         }
     }

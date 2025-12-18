@@ -91,7 +91,7 @@ This project is a functional implementation of the methodologies described in th
 
 If using this tool, please cite:
 
-    ```
+
         @inproceedings{carvalho_2024_14336029,
         author       = {Carvalho, Nádia and
                         Bernardes de Almeida, Gilberto},

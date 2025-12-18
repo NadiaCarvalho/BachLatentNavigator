@@ -1,11 +1,3 @@
-<template>
-    <div class="phrase-score-container" :class="{ 'readonly': props.readonly }">
-        <div ref="scoreEl" class="score-canvas"></div>
-        <div v-if="!props.readonly" class="click-hint">Click a chord to select it for substitution.</div>
-        <div v-else class="noclick-hint"></div>
-    </div>
-</template>
-
 <script setup>
 import { onMounted, watch, ref } from 'vue'
 import * as VF from 'vexflow'
@@ -64,23 +56,21 @@ function toVexFlowKeys(pitchClass) {
 
 function renderPhrase() {
     if (!scoreEl.value) return;
-    scoreEl.value.innerHTML = ''
 
-    // 1. Initialize/Get Renderer using the direct VF access
-    if (!renderer) {
-        // Using VF.Renderer and VF.Renderer.Backends
-        renderer = new VF.Renderer(
-            scoreEl.value,
-            VF.Renderer.Backends.SVG
-        );
-    }
+    // 1. Wipe the container
+    scoreEl.value.innerHTML = '';
 
-    const width = Math.max(600, props.phrase.length * 100)
+    // 2. Force a new renderer creation by resetting the variable
+    // This ensures the renderer is looking at the NEW SVG element
+    renderer = new VF.Renderer(
+        scoreEl.value,
+        VF.Renderer.Backends.SVG
+    );
+
+    const width = Math.max(600, props.phrase.length * 100);
     const height = 220;
-    renderer.resize(width, height)
-    const context = renderer.getContext()
-
-    context.clear();
+    renderer.resize(width, height);
+    const context = renderer.getContext();
 
     // Calculate the total duration (since all are 'q' notes, it's just the length)
     const totalBeats = props.phrase.length;
@@ -95,8 +85,6 @@ function renderPhrase() {
     const notes = props.phrase.map((chordId, i) => {
         const chordData = getChordById(chordId);
 
-        //console.log(chordId, chordData.pitchclass);
-
         if (!chordData || !chordData.pitchclass) {
             return new VF.StaveNote({ keys: ['c/4'], duration: 'qr' });
         }
@@ -109,6 +97,9 @@ function renderPhrase() {
             keys,
             duration: 'q'
         });
+
+        note.setAttribute('id', `chord-target-${i}`);
+        note.setAttribute('data-chord-index', i);
 
         // --- Highlighting Logic ---
         let fillColor = '#000';
@@ -170,17 +161,22 @@ function renderPhrase() {
     if (!props.readonly) {
         const svg = scoreEl.value.querySelector('svg');
         if (svg) {
-            svg.querySelectorAll('[data-chord-index]').forEach(element => {
-                const index = element.getAttribute('data-chord-index');
-                const clickableElement = element.closest('g');
+            // Get ALL stavenotes in the order they were drawn
+            const noteGroups = svg.querySelectorAll('.vf-stavenote');
 
-                if (clickableElement && index !== null) {
-                    clickableElement.style.cursor = 'pointer';
+            noteGroups.forEach((element, index) => {
+                // Since the DOM order matches your phrase array order:
+                element.style.cursor = 'pointer';
+                element.style.pointerEvents = 'auto';
 
-                    clickableElement.addEventListener('click', () => {
-                        emit('select-chord', Number(index));
-                    }, { once: true });
-                }
+                element.onclick = () => {
+                    const selectedChordId = props.phrase[index];
+
+                    emit('select-chord', {
+                        index: index,
+                        chordId: selectedChordId
+                    });
+                };
             });
         }
     }
@@ -189,6 +185,14 @@ function renderPhrase() {
 onMounted(renderPhrase)
 watch(() => [props.phrase, props.selectedIndices], renderPhrase, { deep: true })
 </script>
+
+<template>
+    <div class="phrase-score-container" :class="{ 'readonly': props.readonly }">
+        <div ref="scoreEl" class="score-canvas"></div>
+        <div v-if="!props.readonly" class="click-hint">Click a chord to select it for substitution.</div>
+        <div v-else class="noclick-hint"></div>
+    </div>
+</template>
 
 <style scoped>
 .phrase-score-container {
@@ -214,5 +218,10 @@ watch(() => [props.phrase, props.selectedIndices], renderPhrase, { deep: true })
 
 .noclick-hint {
     height: 1.2em;
+}
+
+.phrase-score-container:not(.readonly) .score-canvas :deep(.vf-stavenote):hover {
+    filter: drop-shadow(0px 0px 2px #007bff);
+    transition: filter 0.2s;
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 
 // --- IMPORTS ---
 import PhraseSelector from './components/PhraseSelector.vue';
@@ -48,6 +48,10 @@ const currentSubstitutionDetails = ref({
 
 // --- CORE COMPUTED LOGIC ---
 
+const generatedPhrase = ref([]); // Change this to a ref
+
+
+/*
 // Computes the generated phrase and updates visualization details
 const generatedPhrase = computed(() => {
   const { generatedPhraseIds, substitutionDetails } = substitutePhrase(
@@ -77,6 +81,29 @@ const originalPhraseCoords = computed(() => {
     currentSubstitutionDetails.value.originalC,
   ].filter(coord => coord);
 });
+*/
+
+watch(
+  [originalPhrase, selectedChordIndices, strategy, k], 
+  () => {
+    const { generatedPhraseIds, substitutionDetails } = substitutePhrase(
+      originalPhrase.value,
+      selectedChordIndices.value,
+      strategy.value,
+      { k: k.value }
+    );
+
+    // 1. Update the generated phrase ref
+    generatedPhrase.value = generatedPhraseIds;
+
+    // 2. Update the details ref
+    currentSubstitutionDetails.value = {
+      ...substitutionDetails,
+      substitutedChord: chordDict.find(c => c.id === substitutionDetails.substitutedChordId)
+    };
+  }, 
+  { immediate: true } // Run immediately on setup to populate initial values
+);
 
 
 // --- EVENT HANDLERS ---
@@ -89,10 +116,10 @@ function handlePhraseUpdate(newPhraseIds) {
 
 function toggleChordSelection(index) {
   // Enforce selecting only one chord (the target B) for the A-B-C experiment
-  if (selectedChordIndices.value[0] === index) {
+  if (selectedChordIndices.value[0] === index.index) {
     selectedChordIndices.value = [];
   } else {
-    selectedChordIndices.value = [index];
+    selectedChordIndices.value = [index.index];
   }
 }
 
@@ -136,8 +163,8 @@ function handleStop() {
     <ScoreComparison :original="originalPhrase" :generated="generatedPhrase" :selected-indices="selectedChordIndices"
       @select-chord="toggleChordSelection" />
 
-    <LatentNavigator :all-latents="chordDict" :original-phrase-coords="originalPhraseCoords"
-      :substitution-details="currentSubstitutionDetails" />
+    <!--<LatentNavigator :all-latents="chordDict" :original-phrase-coords="originalPhraseCoords"
+      :substitution-details="currentSubstitutionDetails" />-->
   </div>
 </template>
 

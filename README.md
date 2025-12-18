@@ -25,7 +25,7 @@ An interactive web application based on research into **Explainable AI (XAI)** f
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/yourusername/bach-latent-navigator.git](https://github.com/yourusername/bach-latent-navigator.git)
+   git clone https://github.com/yourusername/bach-latent-navigator.git
    cd bach-latent-navigator
    
 

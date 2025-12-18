@@ -35,7 +35,8 @@ An interactive web application based on research into **Explainable AI (XAI)** f
    
 
 3. **Prepare the Data:**
-    Ensure your chords_bach_short.json (containing the latent vectors and pitch classes) is located in src/data/.
+
+    Ensure your chords_bach_all.json (containing the latent vectors and pitch classes) is located in src/data/.
 
 4. **Run the Development Server:**
     ```bash

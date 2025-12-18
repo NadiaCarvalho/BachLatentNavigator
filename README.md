@@ -75,10 +75,49 @@ Defines a neighborhood of size $k$ around the target chord $B$. This strategy al
 ### 3. Angular Alignment
 A more advanced strategy that seeks a neighbor $B''$ which maximizes the cosine similarity between vectors $\vec{AB}$ and $\vec{AB''}$. This preserves the "harmonic direction" of the original musical sequence.
 
+---
 
+## 📖 References & Acknowledgments
+
+This project is a functional implementation of the methodologies described in the following research paper:
+
+* **Paper Title:** *Exploring Sampling Strategies in Latent Spaces for
+                   Music Generation*
+* **Authors:** Carvalho, Nádia and
+                  Bernardes de Almeida, Gilberto
+* **Publication:** Proceedings of the 21st Sound and Music Computing
+                        Conference (SMC)
+* **Link:** https://doi.org/10.5281/zenodo.14336029
+
+If using this tool, please cite:
+
+    ```
+        @inproceedings{carvalho_2024_14336029,
+        author       = {Carvalho, Nádia and
+                        Bernardes de Almeida, Gilberto},
+        title        = {Exploring Sampling Strategies in Latent Spaces for
+                        Music Generation
+                        },
+        booktitle    = {Proceedings of the 21st Sound and Music Computing
+                        Conference
+                        },
+        year         = 2024,
+        pages        = {74-81},
+        publisher    = {Zenodo},
+        month        = jul,
+        venue        = {ESMAE, Porto, Portugal},
+        doi          = {10.5281/zenodo.14336029},
+        url          = {https://doi.org/10.5281/zenodo.14336029},
+        }
+
+
+
+The data used in this navigator is derived from the **JSB Chorales** dataset, a standard benchmark in music generation research.
 
 ---
 
 ## 📜 License
 
-Distributed under the **MIT License**. See `LICENSE` for more information. This project is intended for research, educational purposes, and creative exploration of Latent Space navigation.
+Distributed under the **MIT License**. This project is intended for research, educational purposes, and creative exploration of Latent Space navigation.
+
+---

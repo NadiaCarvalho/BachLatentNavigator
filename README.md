@@ -1,38 +1,83 @@
-# BachLatentNavigator
+# 🎼 Bach Chorale Latent Space Navigator
 
-This template should help get you started developing with Vue 3 in Vite.
+An interactive web application based on research into **Explainable AI (XAI)** for musical generation. This tool demonstrates how high-dimensional latent spaces of Variational Autoencoders (VAEs) can be navigated using geometric strategies to perform musically informed chord substitutions.
 
-## Recommended IDE Setup
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
 
-## Recommended Browser Setup
+## 🌟 Features
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd) 
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+- **Latent Substitution Logic:** Implements three core strategies for chord replacement:
+    - **Linear Interpolation:** Finds the midpoint between neighboring chords in latent space.
+    - **k-Nearest Neighbors (k-NN):** Samples the closest discrete chords based on Euclidean distance.
+    - **Angular Alignment:** Aligns the directional vector of the substitution with the original musical intent.
+- **Dynamic Score Rendering:** Real-time musical notation using **VexFlow**.
+- **Interactive Visualization:** A 2D PCA projection of the high-dimensional latent space to provide a geometric "explanation" of the AI's decisions.
+- **Audio Playback:** Built-in synthesis using **Tone.js** to hear the difference between original Bach and AI-generated variations.
 
-## Customize configuration
+## 🚀 Getting Started
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+### Prerequisites
 
-## Project Setup
+- [Node.js](https://nodejs.org/) (v16.x or higher recommended)
+- [NPM](https://www.npmjs.com/)
 
-```sh
-npm install
-```
+### Installation
 
-### Compile and Hot-Reload for Development
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/yourusername/bach-latent-navigator.git](https://github.com/yourusername/bach-latent-navigator.git)
+   cd bach-latent-navigator
+   ´´´
 
-```sh
-npm run dev
-```
+2. **Install dependencies:**
+    ```bash
+   npm install vexflow tone vue
+   ´´´
 
-### Compile and Minify for Production
+3. **Prepare the Data:**
+    Ensure your chords_bach_short.json (containing the latent vectors and pitch classes) is located in src/data/.
 
-```sh
-npm run build
-```
+4. **Run the Development Server:**
+    ```bash
+   npm run dev
+   ´´´
+
+---
+
+## 🛠 Project Architecture
+
+The system is built as a modular Vue 3 application, separating mathematical logic from musical rendering.
+
+| Component | Technology | Responsibility |
+| :--- | :--- | :--- |
+| **Orchestrator** | `App.vue` | Manages global state, strategy selection, and data flow. |
+| **Notation Engine** | `VexFlow` | Translates chord IDs into SVG musical scores. |
+| **Audio Engine** | `Tone.js` | Polyphonic synthesis and timing for phrase playback. |
+| **Latent Logic** | `logic/distance.js` | Calculates Euclidean distance and Angular Similarity. |
+
+---
+
+## 📐 Geometric Strategies
+
+This tool implements the three primary substitution methods discussed in the SMC research paper:
+
+### 1. Linear Interpolation (Midpoint)
+Calculates the high-dimensional midpoint $M$ between chords $A$ and $C$ ($M = \frac{A+C}{2}$). The system then identifies the discrete chord $B'$ in the dataset that minimizes the Euclidean distance to $M$.
+
+
+
+### 2. k-Nearest Neighbors (k-NN)
+Defines a neighborhood of size $k$ around the target chord $B$. This strategy allows for exploring variations that are "locally" similar to the original Bach chord.
+
+
+
+### 3. Angular Alignment
+A more advanced strategy that seeks a neighbor $B''$ which maximizes the cosine similarity between vectors $\vec{AB}$ and $\vec{AB''}$. This preserves the "harmonic direction" of the original musical sequence.
+
+
+
+---
+
+## 📜 License
+
+Distributed under the **MIT License**. See `LICENSE` for more information. This project is intended for research, educational purposes, and creative exploration of Latent Space navigation.

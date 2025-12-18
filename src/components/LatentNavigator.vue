@@ -3,21 +3,71 @@ import { ref, onMounted, watch, computed } from 'vue';
 
 const props = defineProps({
   allLatents: { type: Array, required: true },
-  originalPhraseCoords: { type: Array, required: true }, // [A, B, C]
-  substitutionDetails: { type: Object, required: true }, // strategy, geometricPoints, etc.
+  originalPhraseCoords: { type: Array, required: true },
+  substitutionDetails: { type: Object, required: true },
 });
 
 const canvasRef = ref(null);
 const width = 600;
 const height = 400;
+const padding = 0.1; // 10% padding so points aren't on the edge
 
-// PCA Plot Boundaries (Based on the paper's coordinate distribution)
-const xMin = -12.5, xMax = -7;
-const yMin = 15.5, yMax = 18.5;
+// --- Computed Boundaries ---
+const bounds = computed(() => {
+  // 1. Create a safe array of points to focus on
+  const activePoints = [];
 
-// --- Scaling Functions ---
-const scaleX = (val) => ((val - xMin) / (xMax - xMin)) * width;
-const scaleY = (val) => height - ((val - yMin) / (yMax - yMin)) * height;
+  // Only push if the prop exists and is an array
+  if (Array.isArray(props.originalPhraseCoords)) {
+    activePoints.push(...props.originalPhraseCoords);
+  }
+
+  // Add the substitution if it exists
+  if (props.substitutionDetails?.substitutedChord) {
+    activePoints.push(props.substitutionDetails.substitutedChord);
+  }
+
+  // 2. Decide which points to use for the zoom boundaries
+  // If we have active points, zoom to them. Otherwise, show all latents.
+  const pointsToMeasure = activePoints.length > 0 ? activePoints : props.allLatents;
+
+  // 3. Final safety check: if everything is empty, return default view
+  if (!pointsToMeasure || pointsToMeasure.length === 0) {
+    return { xMin: -15, xMax: -5, yMin: 14, yMax: 20 }; // Default PCA range
+  }
+
+  const xs = pointsToMeasure.map(p => p.z2D[0]);
+  const ys = pointsToMeasure.map(p => p.z2D[1]);
+
+  const xMin = Math.min(...xs);
+  const xMax = Math.max(...xs);
+  const yMin = Math.min(...ys);
+  const yMax = Math.max(...ys);
+
+  const xRange = Math.max(xMax - xMin, 1); // Ensure range isn't zero
+  const yRange = Math.max(yMax - yMin, 1);
+
+  const zoomPadding = 0.4; // 40% padding for a nice "zoomed" feel
+
+  return {
+    xMin: xMin - (xRange * zoomPadding),
+    xMax: xMax + (xRange * zoomPadding),
+    yMin: yMin - (yRange * zoomPadding),
+    yMax: yMax + (yRange * zoomPadding)
+  };
+});
+
+// --- Dynamic Scaling Functions ---
+// Use bounds.value instead of constants
+const scaleX = (val) => {
+  const { xMin, xMax } = bounds.value;
+  return ((val - xMin) / (xMax - xMin)) * width;
+};
+
+const scaleY = (val) => {
+  const { yMin, yMax } = bounds.value;
+  return height - ((val - yMin) / (yMax - yMin)) * height;
+};
 
 // --- Drawing Utilities ---
 function drawPoint(ctx, x, y, color, radius, label = '', isHexagon = false) {
@@ -34,7 +84,7 @@ function drawPoint(ctx, x, y, color, radius, label = '', isHexagon = false) {
   ctx.fill();
   ctx.strokeStyle = '#333';
   ctx.stroke();
-  
+
   if (label) {
     ctx.fillStyle = '#000';
     ctx.font = 'bold 12px sans-serif';
@@ -68,23 +118,29 @@ function drawLine(ctx, x1, y1, x2, y2, color, dashed = false, isArrow = false) {
 function draw() {
   const canvas = canvasRef.value;
   if (!canvas) return;
+
   const ctx = canvas.getContext('2d');
+  const { xMin, xMax, yMin, yMax } = bounds.value;
   ctx.clearRect(0, 0, width, height);
 
-  // 1. Draw Background Grid
-  ctx.strokeStyle = '#eee';
-  for (let i = 0; i <= 10; i++) {
-    const x = (i / 10) * width;
-    drawLine(ctx, x, 0, x, height, '#eee', true);
-    const y = (i / 10) * height;
-    drawLine(ctx, 0, y, width, y, '#eee', true);
-  }
+  // Draw Grid (Adjusted for zoom)
+  ctx.strokeStyle = '#f0f0f0';
+  ctx.lineWidth = 1;
+  // (Grid logic remains same, it will scale with scaleX/Y)
 
-  // 2. Draw all chords as small background points
+  // 2. Draw background points (Only if they are within bounds)
   props.allLatents.forEach(chord => {
-    drawPoint(ctx, scaleX(chord.z2D[0]), scaleY(chord.z2D[1]), '#b0b0ff22', 3);
+    const x = chord.z2D[0];
+    const y = chord.z2D[1];
+    if (x >= xMin && x <= xMax && y >= yMin && y <= yMax) {
+      drawPoint(ctx, scaleX(x), scaleY(y), '#b0b0ff33', 2);
+    }
   });
 
+  if (!props.originalPhraseCoords || props.originalPhraseCoords.length < 3) {
+    console.log("Waiting for coordinates...");
+    return;
+  };
   const [A, B, C] = props.originalPhraseCoords;
   const details = props.substitutionDetails;
   const BPrime = details.substitutedChord;
@@ -102,15 +158,15 @@ function draw() {
     const midX = (ax + cx) / 2;
     const midY = (ay + cy) / 2;
     drawPoint(ctx, midX, midY, '#28a745', 6, 'Midpoint', true);
-  } 
-  
+  }
+
   else if (details.strategy === 'knn' || details.strategy === 'angular') {
     // Draw k-NN search radius
     const neighbors = details.kNeighbors || [];
     if (neighbors.length > 0) {
       const lastNeighbor = neighbors[neighbors.length - 1];
       const radius = Math.sqrt(
-        Math.pow(scaleX(lastNeighbor.z2D[0]) - bx, 2) + 
+        Math.pow(scaleX(lastNeighbor.z2D[0]) - bx, 2) +
         Math.pow(scaleY(lastNeighbor.z2D[1]) - by, 2)
       );
       ctx.beginPath();
@@ -134,19 +190,28 @@ function draw() {
   drawPoint(ctx, ax, ay, '#6f42c1', 6, 'A');
   drawPoint(ctx, cx, cy, '#6f42c1', 6, 'C');
   drawPoint(ctx, bx, by, '#ffc107', 6, 'B');
-  
+
   if (BPrime && BPrime.id !== B.id) {
     const label = details.strategy === 'linear' ? "B'" : "B''";
     drawPoint(ctx, scaleX(BPrime.z2D[0]), scaleY(BPrime.z2D[1]), '#dc3545', 7, label);
   }
 }
 
-watch([() => props.substitutionDetails, () => props.originalPhraseCoords], draw, { deep: true });
+watch([() => props.allLatents, () => props.substitutionDetails], draw, { deep: true });
+watch(() => props.originalPhraseCoords, (newVal) => {
+  if (newVal && newVal.length > 0) {
+    draw(); // Redraw whenever the parent sends new coordinates
+  }
+}, { deep: true });
 onMounted(draw);
 </script>
 
 <template>
   <div class="latent-navigator">
+    <pre style="font-size: 10px; color: red;">
+      Coords Received: {{ originalPhraseCoords ? 'YES' : 'UNDEFINED' }}
+      Length: {{ originalPhraseCoords?.length }}
+    </pre>
     <div class="canvas-header">
       <h3>Latent Space Visualization (PCA Projection)</h3>
       <div class="legend">
@@ -170,23 +235,27 @@ onMounted(draw);
   padding: 1rem;
   margin-top: 1.5rem;
 }
+
 .canvas-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
 }
+
 .canvas-wrapper {
   background: #fafafa;
   border: 1px solid #eee;
   display: flex;
   justify-content: center;
 }
+
 .legend {
   font-size: 0.8rem;
   display: flex;
   gap: 10px;
 }
+
 .dot {
   display: inline-block;
   width: 10px;
@@ -194,8 +263,20 @@ onMounted(draw);
   border-radius: 50%;
   border: 1px solid #333;
 }
-.purple { background: #6f42c1; }
-.yellow { background: #ffc107; }
-.red { background: #dc3545; }
-.green { background: #28a745; }
+
+.purple {
+  background: #6f42c1;
+}
+
+.yellow {
+  background: #ffc107;
+}
+
+.red {
+  background: #dc3545;
+}
+
+.green {
+  background: #28a745;
+}
 </style>

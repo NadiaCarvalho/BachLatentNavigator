@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, isRef } from 'vue';
 
 // --- IMPORTS ---
 import PhraseSelector from './components/PhraseSelector.vue';
@@ -23,11 +23,34 @@ const demoPhrases = [
   { id: 'short-test', name: 'A-B-C Test (3-Chord)', chordIds: ["5838", "4524", "1787"] },
 ];
 
+function getCoordPhrase(phraseIds, selectedIndex) {
+  // 1. Get raw array of IDs
+  const ids = isRef(phraseIds) ? phraseIds.value : phraseIds;
+  const index = isRef(selectedIndex) ? selectedIndex.value[0] : selectedIndex;
+
+  if (!Array.isArray(ids) || index === undefined) return [];
+
+  // 2. Define the window [index-1, index, index+1]
+  const targetIndices = [index - 1, index, index[0] + 1];
+
+  // 3. Map to coordinates, ensuring we handle "out of bounds" for start/end of phrase
+  return targetIndices
+    .map(idx => {
+      // Check if the neighbor exists (e.g., index 0 has no index -1)
+      const id = ids[idx];
+      if (!id) return null; 
+      
+      return chordDict.find(c => c.id === id);
+    })
+    .filter(coord => !!coord); // Remove nulls if at the start or end of a phrase
+}
+
 // --- STATE MANAGEMENT ---
 const currentPhrase = ref(demoPhrases[0]);
 const originalPhrase = ref(currentPhrase.value.chordIds);
 // Default selection is the middle chord B (index 2 in a 5-chord array, index 1 in a 3-chord array)
 const selectedChordIndices = ref([2]);
+const originalPhraseCoords = ref(getCoordPhrase(originalPhrase.value, selectedChordIndices.value));
 
 // Strategy controls state
 const strategy = ref('knn');
@@ -48,43 +71,10 @@ const currentSubstitutionDetails = ref({
 
 // --- CORE COMPUTED LOGIC ---
 
-const generatedPhrase = ref([]); // Change this to a ref
-
-
-/*
-// Computes the generated phrase and updates visualization details
-const generatedPhrase = computed(() => {
-  const { generatedPhraseIds, substitutionDetails } = substitutePhrase(
-    originalPhrase.value,
-    selectedChordIndices.value,
-    strategy.value,
-    { k: k.value }
-  );
-
-  // Update the visualization details ref with the new results
-  currentSubstitutionDetails.value = {
-    ...substitutionDetails,
-    // Look up the full chord object for the visualization
-    substitutedChord: chordDict.find(c => c.id === substitutionDetails.substitutedChordId)
-  };
-
-  return generatedPhraseIds;
-});
-
-
-// Prepare coordinates (A, B, C objects) for LatentNavigator prop
-const originalPhraseCoords = computed(() => {
-  // Only return the three chords A, B, C involved in the substitution
-  return [
-    currentSubstitutionDetails.value.originalA,
-    currentSubstitutionDetails.value.originalB,
-    currentSubstitutionDetails.value.originalC,
-  ].filter(coord => coord);
-});
-*/
+const generatedPhrase = ref([]);
 
 watch(
-  [originalPhrase, selectedChordIndices, strategy, k], 
+  [originalPhrase, selectedChordIndices, strategy, k],
   () => {
     const { generatedPhraseIds, substitutionDetails } = substitutePhrase(
       originalPhrase.value,
@@ -101,17 +91,19 @@ watch(
       ...substitutionDetails,
       substitutedChord: chordDict.find(c => c.id === substitutionDetails.substitutedChordId)
     };
-  }, 
+
+    originalPhraseCoords.value = getCoordPhrase(originalPhrase.value, selectedChordIndices.value);
+  },
   { immediate: true } // Run immediately on setup to populate initial values
 );
+
 
 
 // --- EVENT HANDLERS ---
 
 function handlePhraseUpdate(newPhraseIds) {
   originalPhrase.value = newPhraseIds;
-  // Reset selection to the middle chord
-  selectedChordIndices.value = [Math.floor(newPhraseIds.length / 2)];
+  selectedChordIndices.value = [Math.floor(newPhraseIds.length / 2)];   // Reset selection to the middle chord
 }
 
 function toggleChordSelection(index) {
@@ -163,8 +155,8 @@ function handleStop() {
     <ScoreComparison :original="originalPhrase" :generated="generatedPhrase" :selected-indices="selectedChordIndices"
       @select-chord="toggleChordSelection" />
 
-    <!--<LatentNavigator :all-latents="chordDict" :original-phrase-coords="originalPhraseCoords"
-      :substitution-details="currentSubstitutionDetails" />-->
+    <LatentNavigator :all-latents="chordDict" :original-phrase-coords="originalPhraseCoords"
+      :substitution-details="currentSubstitutionDetails" />
   </div>
 </template>
 

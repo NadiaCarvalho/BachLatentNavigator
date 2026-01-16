@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
-import PhraseNavigator from './cviews/PhraseNavigatior.vue';
-import LatentInstrument from './cviews/LatentInstrument.vue';
+import PhraseNavigator from './views/PhraseNavigatior.vue';
+import LatentInstrument from './views/LatentInstrument.vue';
 
 const currentMode = ref('instrument'); // Toggle state
 </script>

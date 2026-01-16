@@ -2,19 +2,45 @@
 
 import * as Tone from 'tone';
 
-// Tone.js Synth Setup: Using a simple PolySynth with a clear, organ-like tone 
-// (appropriate for Bach chorales) for polyphonic playback.
+/**
+ * Converts a MIDI pitch class string (e.g., "60-64-67") 
+ * into an array of Tone.js note names (e.g., ["C4", "E4", "G4"]).
+ */
+function midiToNoteNames(pitchclassString) {
+  if (!pitchclassString) return [];
+  
+  // Split string "60-64-67" into [60, 64, 67]
+  const midiNotes = pitchclassString.split('-').map(Number);
+  
+  const PITCH_CLASSES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  
+  return midiNotes.map(midi => {
+    const noteName = PITCH_CLASSES[midi % 12];
+    const octave = Math.floor(midi / 12) - 1;
+    return `${noteName}${octave}`;
+  });
+}
+
 const synth = new Tone.PolySynth(Tone.Synth, {
   oscillator: {
-    type: "sine" 
+    type: "fatsawtooth", // 'Fat' adds multiple detuned voices
+    count: 3,            // Number of detuned oscillators
+    spread: 30           // How much they are detuned from each other
   },
   envelope: {
-    attack: 0.05,
-    decay: 0.2,
-    sustain: 0.5,
-    release: 1
+    attack: 0.1,    // Organs have a slightly slower build-up
+    decay: 0.3,
+    sustain: 1,     // Organs sustain at full volume as long as the key is held
+    release: 0.8    // A bit of "ring" after the key is released
   }
 }).toDestination();
+
+// Add a Filter to remove the "buzz" and make it "woody/mellow"
+const filter = new Tone.Filter(1500, "lowpass").toDestination();
+synth.connect(filter);
+
+// Set volume lower to account for the richer harmonic content
+synth.volume.value = -18;
 
 // Constants for timing
 const CHORD_DURATION = '0.5s'; // How long each chord sounds
@@ -57,7 +83,7 @@ export function playPhrase(phraseIds, getChordById) {
       return;
     }
     
-    const notes = chordData.pitchclass; // e.g., ["C4", "E4", "G4"]
+    const notes = midiToNoteNames(chordData.pitchclass);  // e.g., ["C4", "E4", "G4"]
     // Calculate the start time for this chord
     const time = index * Tone.Time(CHORD_INTERVAL).toSeconds();
     
@@ -78,4 +104,29 @@ export function playPhrase(phraseIds, getChordById) {
 export function stopPlayback() {
   Tone.Transport.stop();
   Tone.Transport.cancel();
+}
+
+/**
+ * 
+ * @param {*} chord 
+ */
+export function setNextLatentChord(chord) {
+  queuedChord = chord; // The mouse updates this constantly
+}
+
+/**
+ * 
+ */
+export function initializeInstrumentTransport() {
+  Tone.Transport.bpm.value = 80;
+  
+  // The "Tactus": Trigger the most recently sampled chord every quarter note
+  Tone.Transport.scheduleRepeat((time) => {
+      if (queuedChord) {
+          const notes = midiToFrequencies(queuedChord.pitchclass);
+          synth.triggerAttackRelease(notes, "4n", time);
+      }
+  }, "4n");
+  
+  Tone.Transport.start();
 }

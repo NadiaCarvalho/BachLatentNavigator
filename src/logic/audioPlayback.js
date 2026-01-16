@@ -61,8 +61,8 @@ function getSynth() {
 const synth = getSynth();
 
 // Constants for timing
-const CHORD_DURATION = '0.5s'; // How long each chord sounds
-const CHORD_INTERVAL = '0.5s'; // Time between the start of successive chords
+//const CHORD_DURATION = '0.5s'; // How long each chord sounds
+//const CHORD_INTERVAL = '0.5s'; // Time between the start of successive chords
 
 /**
  * Initializes Tone.js audio context. 
@@ -80,9 +80,10 @@ export async function startAudioContext() {
 /**
  * Plays a sequence of chords.
  * @param {Array<string>} phraseIds - The list of chord IDs to play.
+ * @param {Array<string>} rhythms - The list of rhyrhms of each chord to play.
  * @param {Function} getChordById - Function to retrieve chord data (including pitchclass) by ID.
  */
-export function playPhrase(phraseIds, getChordById) {
+export function playPhrase(phraseIds, rhythms, getChordById) {
   // Ensure the audio context is running (although handled by the button click wrapper, 
   // it's a good safety check)
   startAudioContext();
@@ -90,6 +91,8 @@ export function playPhrase(phraseIds, getChordById) {
   // Stop any previous playback and clear the transport schedule
   Tone.getTransport().stop();
   Tone.getTransport().cancel();
+
+  let currentTime = 0;
 
   // Schedule the sequence
   phraseIds.forEach((id, index) => {
@@ -102,14 +105,17 @@ export function playPhrase(phraseIds, getChordById) {
     }
 
     const notes = midiToNoteNames(chordData.pitchclass);  // e.g., ["C4", "E4", "G4"]
+    const duration = rhythms && rhythms[index] ? rhythms[index] : "4n";
     // Calculate the start time for this chord
-    const time = index * Tone.Time(CHORD_INTERVAL).toSeconds();
+    //const time = index * Tone.Time(CHORD_INTERVAL).toSeconds();
 
     // Schedule the event
     Tone.getTransport().schedule(time => {
       // Trigger the notes
-      synth.triggerAttackRelease(notes, CHORD_DURATION, time);
-    }, time);
+      synth.triggerAttackRelease(notes, duration, time);
+    }, currentTime);
+
+    currentTime += Tone.Time(duration).toSeconds();
   });
 
   // Start the transport scheduler

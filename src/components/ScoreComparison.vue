@@ -4,7 +4,8 @@ import PhraseScore from './PhraseScore.vue'
 const props = defineProps({
   original: { type: Array, required: true },
   generated: { type: Array, required: true },
-  selectedIndices: { type: Array, default: () => [] }
+  selectedIndices: { type: Array, default: () => [] },
+  rhythms: { type: Array, default: () => [] }
 })
 
 const emit = defineEmits(['select-chord'])
@@ -21,6 +22,7 @@ function handleChordSelection(index) {
       <PhraseScore
         :phrase="original"
         :selected-indices="selectedIndices"
+        :rhythms="rhythms"
         :readonly="false"
         @select-chord="handleChordSelection"
       />
@@ -31,6 +33,7 @@ function handleChordSelection(index) {
       <PhraseScore
         :phrase="generated"
         :selected-indices="[]"
+        :rhythms="rhythms"
         :readonly="true"
       />
     </div>

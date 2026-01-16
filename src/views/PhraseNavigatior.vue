@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, isRef } from 'vue';
+import { ref, watch, isRef, computed } from 'vue';
 
 // --- IMPORTS ---
 import PhraseSelector from './../components/PhraseSelector.vue';
@@ -64,6 +64,17 @@ const currentSubstitutionDetails = ref({
 
 
 // --- CORE COMPUTED LOGIC ---
+const currentRhythms = computed(() => {
+  // If currentPhrase exists and has rhythms, use them. 
+  // Otherwise, create an array of "4n" (quarter notes) matching the phrase length.
+  if (currentPhrase.value && currentPhrase.value.rhythms) {
+    return currentPhrase.value.rhythms;
+  }
+  
+  // Fallback: Default to all quarter notes if rhythms are missing
+  const length = currentPhrase.value?.chordIds?.length || 0;
+  return new Array(length).fill("4n");
+});
 
 const generatedPhrase = ref([]);
 
@@ -117,7 +128,7 @@ function handlePlay(type) {
   const phraseToPlay = type === 'original' ? originalPhrase.value : generatedPhrase.value;
 
   // Pass the phrase IDs and the lookup function to the playback module
-  playPhrase(phraseToPlay, getChordById);
+  playPhrase(phraseToPlay, currentRhythms.value, getChordById);
 }
 
 function handleStop() {
@@ -146,7 +157,7 @@ function handleStop() {
       </div>
     </div>
 
-    <ScoreComparison :original="originalPhrase" :generated="generatedPhrase" :selected-indices="selectedChordIndices"
+    <ScoreComparison :original="originalPhrase" :generated="generatedPhrase" :selected-indices="selectedChordIndices" :rhythms="currentRhythms"
       @select-chord="toggleChordSelection" />
 
     <LatentNavigator :all-latents="chordDict" :original-phrase-coords="originalPhraseCoords"

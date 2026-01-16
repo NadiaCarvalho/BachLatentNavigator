@@ -7,6 +7,7 @@ import { getChordById } from '../logic/latentStrategies.js'
 const props = defineProps({
     phrase: { type: Array, required: true },
     selectedIndices: { type: Array, default: () => [] },
+    rhythms: { type: Array, default: () => [] },
     readonly: { type: Boolean, default: false }
 })
 
@@ -22,6 +23,14 @@ let renderer = null;
 const PITCH_CLASSES = [
     'c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b'
 ];
+
+const rhythmMap = {
+    "1n": "w", // whole
+    "2n": "h", // half
+    "4n": "q", // quarter
+    "8n": "8", // eighth
+    "16n": "16" // sixteenth
+};
 
 function toVexFlowKeys(pitchClass) {
     if (!pitchClass || pitchClass.length === 0) return ['c/4'];
@@ -91,11 +100,15 @@ function renderPhrase() {
 
         const keys = toVexFlowKeys(chordData.pitchclass);
 
+        const durationValue = props.rhythms && props.rhythms[i] 
+        ? rhythmMap[props.rhythms[i]] 
+        : "q";
+
         // Use VF.StaveNote
         const note = new VF.StaveNote({
             clef: 'treble',
             keys,
-            duration: 'q'
+            duration: durationValue
         });
 
         note.setAttribute('id', `chord-target-${i}`);

@@ -1,0 +1,26 @@
+[
+    { 
+      "id": "bwv184-1", 
+      "name": "BWV 184.5 Cadence (vi-V-I)", 
+      "chordIds": ["5838", "4524", "3823", "5833", "1787"],
+      "rhythms": ["4n", "4n", "2n", "4n", "4n"]
+    },
+    { 
+      "id": "bwv311-1", 
+      "name": "BWV 311 Half Cadence (i-V)", 
+      "chordIds": ["1592", "1798", "5652", "1794", "1645"],
+      "rhythms": ["4n", "4n", "2n", "4n", "4n"] 
+    },
+    { 
+      "id": "short-test", 
+      "name": "A-B-C Test (3-Chord)", 
+      "chordIds": ["5838", "4524", "1787"],
+      "rhythms": ["4n", "4n", "4n"]
+    },
+    {
+      "id": "bwv244-15",
+      "name": "St. Matthew Passion - Herzlich tut mich verlangen",
+      "chordIds": ["1201", "1542", "1899", "1201", "1432"],
+      "rhythms": ["4n", "4n", "2n", "4n", "4n"] 
+    }
+  ]

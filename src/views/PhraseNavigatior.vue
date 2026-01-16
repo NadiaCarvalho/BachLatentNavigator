@@ -15,13 +15,7 @@ import latentJson from './../data/chords_bach_all.json';
 const chordDict = latentJson.chords;
 setChordDict(chordDict);
 
-// Example phrases to populate the PhraseSelector (using chord IDs from the data)
-const demoPhrases = [
-  // These sequences mimic the three-chord sequences used in the paper's figures
-  { id: 'bwv184-1', name: 'BWV 184.5 Cadence (vi-V-I)', chordIds: ["5838", "4524", "3823", "5833", "1787"] }, // Example V-vi-V (index 1 to 3) or vi-V-I (index 0 to 2)
-  { id: 'bwv311-1', name: 'BWV 311 Half Cadence (i-V)', chordIds: ["1592", "1798", "5652", "1794", "1645"] },
-  { id: 'short-test', name: 'A-B-C Test (3-Chord)', chordIds: ["5838", "4524", "1787"] },
-];
+import demoPhrases from '../data/phrases.json';
 
 function getCoordPhrase(phraseIds, selectedIndex) {
   // 1. Get raw array of IDs

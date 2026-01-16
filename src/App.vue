@@ -10,17 +10,11 @@ const currentMode = ref('instrument'); // Toggle state
   <div class="main-container">
     <header class="app-header">
       <div class="mode-tabs">
-        <button 
-          @click="currentMode = 'navigator'" 
-          :class="{ active: currentMode === 'navigator' }"
-        >
+        <button @click="currentMode = 'navigator'" :class="{ active: currentMode === 'navigator' }">
           🔍 Phrase Navigator
         </button>
-        <button 
-          @click="currentMode = 'instrument'" 
-          :class="{ active: currentMode === 'instrument' }"
-        >
-          🎻 Gestural Instrument
+        <button @click="currentMode = 'instrument'" :class="{ active: currentMode === 'instrument' }">
+          🎻 Latent Instrument
         </button>
       </div>
     </header>
@@ -39,6 +33,7 @@ const currentMode = ref('instrument'); // Toggle state
   display: flex;
   justify-content: center;
 }
+
 .mode-tabs button {
   padding: 10px 20px;
   margin: 0 10px;
@@ -48,9 +43,11 @@ const currentMode = ref('instrument'); // Toggle state
   color: white;
   border-radius: 4px;
 }
+
 .mode-tabs button.active {
   background: #42b983;
 }
+
 .content-area {
   padding: 20px;
 }

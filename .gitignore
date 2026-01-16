@@ -36,3 +36,5 @@ coverage
 __screenshots__/
 
 src/data/chords_bach_all.json
+
+.vite
